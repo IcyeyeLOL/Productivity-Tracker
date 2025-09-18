@@ -1,0 +1,41 @@
+{
+  "name": "productivity-tracker-microservices",
+  "version": "1.0.0",
+  "description": "Node.js microservices for Productivity Tracker",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "build": "tsc"
+  },
+  "keywords": ["productivity", "microservices", "nodejs"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.6.3",
+    "bcryptjs": "^2.4.3",
+    "express-rate-limit": "^7.1.4",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "express-validator": "^7.0.1",
+    "aws-sdk": "^2.1481.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.7",
+    "typescript": "^5.2.2",
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.6",
+    "@types/express": "^4.17.20",
+    "@types/cors": "^2.8.15",
+    "@types/bcryptjs": "^2.4.5",
+    "@types/jsonwebtoken": "^9.0.4",
+    "@types/morgan": "^1.9.7"
+  }
+}
