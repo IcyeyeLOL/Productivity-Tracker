@@ -94,6 +94,44 @@ export default function Dashboard() {
     }
   }, [isDarkMode]);
 
+  const playNotificationSound = () => {
+    // Create a simple notification sound using Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  };
+
+  const handlePomodoroComplete = useCallback(() => {
+    setIsTimerRunning(false);
+    
+    if (pomodoroPhase === 'work') {
+      setPomodoroCount(prev => prev + 1);
+      if (pomodoroCount + 1 >= 4) {
+        setPomodoroPhase('longBreak');
+        setPomodoroCount(0);
+      } else {
+        setPomodoroPhase('shortBreak');
+      }
+    } else {
+      setPomodoroPhase('work');
+    }
+    
+    setTimerSeconds(0);
+  }, [pomodoroPhase, pomodoroCount]);
+
   // Timer functionality
   useEffect(() => {
     if (isTimerRunning) {
@@ -136,44 +174,6 @@ export default function Dashboard() {
       }
     };
   }, [isTimerRunning, pomodoroMode, pomodoroPhase, activeTaskId, handlePomodoroComplete, pomodoroTimers, timerInterval]);
-
-  const playNotificationSound = () => {
-    // Create a simple notification sound using Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
-  };
-
-  const handlePomodoroComplete = useCallback(() => {
-    setIsTimerRunning(false);
-    
-    if (pomodoroPhase === 'work') {
-      setPomodoroCount(prev => prev + 1);
-      if (pomodoroCount + 1 >= 4) {
-        setPomodoroPhase('longBreak');
-        setPomodoroCount(0);
-      } else {
-        setPomodoroPhase('shortBreak');
-      }
-    } else {
-      setPomodoroPhase('work');
-    }
-    
-    setTimerSeconds(0);
-  }, [pomodoroPhase, pomodoroCount]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
