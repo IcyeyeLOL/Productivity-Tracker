@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { saveToStorage, loadFromStorage, clearStorage, getDefaultData, exportData, importData } from './utils/storage';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -38,27 +39,26 @@ export default function Dashboard() {
 
   // Initialize data from localStorage or create fresh data
   useEffect(() => {
-    const savedData = localStorage.getItem('productivity-tracker-data');
+    const savedData = loadFromStorage();
     
     if (savedData) {
-      const data = JSON.parse(savedData);
-      setStats(data.stats || {
+      setStats(savedData.stats || {
         totalProjects: 0,
         activeTasks: 0,
         completedTasks: 0,
         totalTimeToday: 0,
         currentSession: null
       });
-      setProjects(data.projects || []);
-      setTasks(data.tasks || []);
-      setIsTimerRunning(data.isTimerRunning || false);
-      setTimerSeconds(data.timerSeconds || 0);
-      setIsDarkMode(data.isDarkMode || false);
-      setPomodoroMode(data.pomodoroMode || false);
-      setPomodoroPhase(data.pomodoroPhase || 'work');
-      setPomodoroCount(data.pomodoroCount || 0);
-      setActiveTaskId(data.activeTaskId || null);
-      setTaskTimers(data.taskTimers || {});
+      setProjects(savedData.projects || []);
+      setTasks(savedData.tasks || []);
+      setIsTimerRunning(savedData.isTimerRunning || false);
+      setTimerSeconds(savedData.timerSeconds || 0);
+      setIsDarkMode(savedData.isDarkMode || false);
+      setPomodoroMode(savedData.pomodoroMode || false);
+      setPomodoroPhase(savedData.pomodoroPhase || 'work');
+      setPomodoroCount(savedData.pomodoroCount || 0);
+      setActiveTaskId(savedData.activeTaskId || null);
+      setTaskTimers(savedData.taskTimers || {});
     } else {
       // Fresh user - show welcome
       setShowWelcome(true);
@@ -79,10 +79,9 @@ export default function Dashboard() {
       pomodoroPhase,
       pomodoroCount,
       activeTaskId,
-      taskTimers,
-      lastUpdated: new Date().toISOString()
+      taskTimers
     };
-    localStorage.setItem('productivity-tracker-data', JSON.stringify(data));
+    saveToStorage(data);
   }, [stats, projects, tasks, isTimerRunning, timerSeconds, isDarkMode, pomodoroMode, pomodoroPhase, pomodoroCount, activeTaskId, taskTimers]);
 
   // Apply dark mode to document
@@ -94,25 +93,29 @@ export default function Dashboard() {
     }
   }, [isDarkMode]);
 
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback(() => {
     // Create a simple notification sound using Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
-  };
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.warn('Could not play notification sound:', error);
+    }
+  }, []);
 
   const handlePomodoroComplete = useCallback(() => {
     setIsTimerRunning(false);
@@ -134,8 +137,10 @@ export default function Dashboard() {
 
   // Timer functionality
   useEffect(() => {
+    let interval = null;
+    
     if (isTimerRunning) {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         setTimerSeconds(prev => {
           const newSeconds = prev + 1;
           
@@ -169,11 +174,11 @@ export default function Dashboard() {
     }
 
     return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
+      if (interval) {
+        clearInterval(interval);
       }
     };
-  }, [isTimerRunning, pomodoroMode, pomodoroPhase, activeTaskId, handlePomodoroComplete, pomodoroTimers, timerInterval]);
+  }, [isTimerRunning, pomodoroMode, pomodoroPhase, activeTaskId, handlePomodoroComplete, pomodoroTimers, playNotificationSound]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -382,18 +387,13 @@ export default function Dashboard() {
 
   const resetData = () => {
     if (confirm('Are you sure you want to reset all data? This action cannot be undone.')) {
-      localStorage.removeItem('productivity-tracker-data');
-      setStats({
-        totalProjects: 0,
-        activeTasks: 0,
-        completedTasks: 0,
-        totalTimeToday: 0,
-        currentSession: null
-      });
-      setProjects([]);
-      setTasks([]);
-      setIsTimerRunning(false);
-      setTimerSeconds(0);
+      clearStorage();
+      const defaultData = getDefaultData();
+      setStats(defaultData.stats);
+      setProjects(defaultData.projects);
+      setTasks(defaultData.tasks);
+      setIsTimerRunning(defaultData.isTimerRunning);
+      setTimerSeconds(defaultData.timerSeconds);
       setPomodoroMode(false);
       setPomodoroPhase('work');
       setPomodoroCount(0);
@@ -402,6 +402,32 @@ export default function Dashboard() {
       setShowWelcome(true);
       setTimeout(() => setShowWelcome(false), 3000);
     }
+  };
+
+  const handleImportData = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const importedData = await importData(file);
+      setStats(importedData.stats || getDefaultData().stats);
+      setProjects(importedData.projects || []);
+      setTasks(importedData.tasks || []);
+      setIsTimerRunning(importedData.isTimerRunning || false);
+      setTimerSeconds(importedData.timerSeconds || 0);
+      setIsDarkMode(importedData.isDarkMode || false);
+      setPomodoroMode(importedData.pomodoroMode || false);
+      setPomodoroPhase(importedData.pomodoroPhase || 'work');
+      setPomodoroCount(importedData.pomodoroCount || 0);
+      setActiveTaskId(importedData.activeTaskId || null);
+      setTaskTimers(importedData.taskTimers || {});
+      alert('Data imported successfully!');
+    } catch (error) {
+      alert('Failed to import data: ' + error.message);
+    }
+    
+    // Reset file input
+    event.target.value = '';
   };
 
   const getPomodoroPhaseText = () => {
@@ -474,6 +500,20 @@ export default function Dashboard() {
               >
                 <span className="mr-2">{isDarkMode ? '☀️' : '🌙'}</span>
                 {isDarkMode ? 'Light' : 'Dark'}
+              </button>
+              <button 
+                onClick={() => exportData()}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <span className="mr-2">📤</span>
+                Export
+              </button>
+              <button 
+                onClick={() => document.getElementById('import-file').click()}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <span className="mr-2">📥</span>
+                Import
               </button>
               <button 
                 onClick={resetData}
@@ -1070,6 +1110,15 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Hidden file input for import */}
+      <input
+        id="import-file"
+        type="file"
+        accept=".json"
+        onChange={handleImportData}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
