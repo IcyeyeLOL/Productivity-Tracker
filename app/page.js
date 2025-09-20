@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -30,11 +30,11 @@ export default function Dashboard() {
   const [taskTimers, setTaskTimers] = useState({});
 
   // Pomodoro timers (in seconds)
-  const pomodoroTimers = {
+  const pomodoroTimers = useMemo(() => ({
     work: 25 * 60, // 25 minutes
     shortBreak: 5 * 60, // 5 minutes
     longBreak: 15 * 60 // 15 minutes
-  };
+  }), []);
 
   // Initialize data from localStorage or create fresh data
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function Dashboard() {
         clearInterval(timerInterval);
       }
     };
-  }, [isTimerRunning, pomodoroMode, pomodoroPhase, activeTaskId]);
+  }, [isTimerRunning, pomodoroMode, pomodoroPhase, activeTaskId, handlePomodoroComplete, pomodoroTimers, timerInterval]);
 
   const playNotificationSound = () => {
     // Create a simple notification sound using Web Audio API
@@ -157,7 +157,7 @@ export default function Dashboard() {
     oscillator.stop(audioContext.currentTime + 0.5);
   };
 
-  const handlePomodoroComplete = () => {
+  const handlePomodoroComplete = useCallback(() => {
     setIsTimerRunning(false);
     
     if (pomodoroPhase === 'work') {
@@ -173,7 +173,7 @@ export default function Dashboard() {
     }
     
     setTimerSeconds(0);
-  };
+  }, [pomodoroPhase, pomodoroCount]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -960,7 +960,7 @@ export default function Dashboard() {
           </h2>
           <p className={`text-sm transition-colors duration-300 ${isDarkMode ? 'text-blue-200' : 'text-blue-800'}`}>
             Your data is automatically saved to localStorage and will persist between sessions. 
-            Use the "Reset" button to start fresh anytime.
+            Use the &quot;Reset&quot; button to start fresh anytime.
           </p>
         </div>
       </main>
