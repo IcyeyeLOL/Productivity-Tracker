@@ -105,7 +105,7 @@ docker-compose ps
 ### **4. Access Application**
 - **Frontend**: http://localhost:3000
 - **API**: http://localhost:8080
-- **Microservice**: http://localhost:3001
+- **Microservice**: http://localhost:3000
 
 ## 🗄️ Database Schema
 
