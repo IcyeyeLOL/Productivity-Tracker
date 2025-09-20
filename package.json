@@ -13,7 +13,6 @@
     "react-dom": "19.1.0",
     "next": "15.5.3",
     "@headlessui/react": "^2.0.4",
-    "@heroicons/react": "^2.0.18",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "react-hook-form": "^7.48.2",
